@@ -245,12 +245,15 @@ tasks:
           status: pass
         - cmd: "P0+P1 feature audit grep"
           status: pass
+        - cmd: "Oracle: loaded unpacked extension in Chrome for Testing 147 via CDP; seeded schedule blocking example.com + example.org with example.org allowlisted; example.com redirected to blocked.html?domain=example.com&schedule=Oracle%20test; example.org loaded normally (allowlist wins)"
+          status: pass
 
 checks:
-  dirty_fingerprint: unknown
+  dirty_fingerprint: clean
   last_verification:
     result: pass
-    task: T003
+    task: T999
     commands:
+      - "node --check (all 8 JS files)"
       - "python3 -m json.tool manifest.json"
-      - "node --check *.js"
+      - "Oracle E2E in Chrome for Testing 147: block + allowlist precedence verified"
