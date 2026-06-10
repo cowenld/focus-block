@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Site Blocked — Focus Block</title>
+  <link rel="stylesheet" href="blocked.css">
+</head>
+<body>
+  <div class="container">
+    <div class="icon">🛡️</div>
+    <h1>You've got this</h1>
+    <p class="subtitle">
+      <strong id="domain"></strong> is blocked by
+      <span id="schedule-name">your schedule</span>
+    </p>
+    <div class="countdown-section">
+      <p class="countdown-label">Access resumes</p>
+      <p class="countdown" id="countdown"></p>
+    </div>
+    <p class="reminder">
+      You set this block to help you focus.<br>
+      It's working.
+    </p>
+    <button class="back-btn" id="go-back">Go back to what matters</button>
+  </div>
+  <script src="blocked.js"></script>
+</body>
+</html>
