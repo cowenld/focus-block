@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Site Blocked — Focus Block</title>
+  <link rel="stylesheet" href="blocked.css">
+</head>
+<body>
+  <div class="container">
+    <div class="icon">🛡️</div>
+    <h1>You've got this</h1>
+    <p class="subtitle">
+      <strong id="domain"></strong> is blocked by
+      <span id="schedule-name">your schedule</span>
+    </p>
+    <div class="countdown-section">
+      <p class="countdown-label">Access resumes</p>
+      <p class="countdown" id="countdown"></p>
+    </div>
+    <p class="reminder">
+      You set this block to help you focus.<br>
+      It's working.
+    </p>
+
+    <!-- Escape actions -->
+    <div id="escape-actions" class="escape-actions" style="display:none">
+      <button class="escape-btn" id="btn-snooze">⏸️ Snooze 5 min</button>
+      <button class="escape-btn escape-secondary" id="btn-allow">✅ Allow this site permanently</button>
+      <button class="escape-btn escape-danger" id="btn-end-early">⏹️ End the block early</button>
+    </div>
+
+    <!-- Passphrase challenge -->
+    <div id="passphrase-challenge" class="passphrase-section" style="display:none">
+      <p class="passphrase-label">Type your commitment phrase to continue:</p>
+      <p class="passphrase-reference" id="passphrase-reference"></p>
+      <input type="text" id="passphrase-input" class="passphrase-input" autocomplete="off" spellcheck="false">
+      <div class="passphrase-progress">
+        <div class="passphrase-bar" id="passphrase-bar"></div>
+      </div>
+      <button class="btn-cancel" id="btn-cancel-challenge">Never mind, keep me focused</button>
+    </div>
+
+    <!-- Cooldown -->
+    <div id="cooldown-section" class="cooldown-section" style="display:none">
+      <p class="cooldown-warning" id="cooldown-warning"></p>
+      <div class="cooldown-timer" id="cooldown-timer"></div>
+      <div class="cooldown-actions">
+        <button class="escape-btn escape-danger" id="btn-confirm-end">End the block</button>
+        <button class="btn-cancel" id="btn-cancel-cooldown">Keep me focused</button>
+      </div>
+    </div>
+
+    <button class="back-btn" id="go-back">Go back to what matters</button>
+  </div>
+  <script src="blocked.js"></script>
+</body>
+</html>

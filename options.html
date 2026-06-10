@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Focus Block — Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1>Focus Block</h1>
+      <nav class="tabs">
+        <button class="tab active" data-tab="schedules">Schedules</button>
+        <button class="tab" data-tab="allowed">Allowed Sites</button>
+        <button class="tab" data-tab="usage">Usage</button>
+        <button class="tab" data-tab="settings">Settings</button>
+      </nav>
+    </header>
+
+    <main class="content">
+      <!-- Schedules Tab -->
+      <section id="tab-schedules" class="tab-content active">
+        <div class="section-header">
+          <h2>Your schedules</h2>
+          <button class="btn btn-primary" id="add-schedule">+ New schedule</button>
+        </div>
+        <div id="schedules-list" class="card-list"></div>
+        <div id="schedules-empty" class="empty-state" style="display:none">
+          <p class="empty-icon">📋</p>
+          <p class="empty-title">No schedules yet</p>
+          <p class="empty-desc">Create a schedule to start blocking distracting sites on a recurring basis.</p>
+          <button class="btn btn-primary" id="add-schedule-empty">Create your first schedule</button>
+        </div>
+      </section>
+
+      <!-- Allowed Sites Tab -->
+      <section id="tab-allowed" class="tab-content">
+        <div class="section-header">
+          <h2>Always allowed</h2>
+        </div>
+        <p class="section-desc">Sites here are never blocked, even during blackout mode. Keep your essentials safe — email, banking, tools you can't afford to lose.</p>
+        <div class="input-row">
+          <input type="text" id="allowlist-input" placeholder="e.g. gmail.com" class="input">
+          <button class="btn btn-primary" id="add-allowlist">Add</button>
+        </div>
+        <div id="allowlist-items" class="chip-list"></div>
+      </section>
+
+      <!-- Lists moved to Settings tab per design doc §5 IA -->
+
+      <!-- Usage Tab -->
+      <section id="tab-usage" class="tab-content">
+        <div class="section-header">
+          <h2>Usage</h2>
+        </div>
+        <p class="section-desc">Your local-only focus insights. Nothing leaves your device.</p>
+
+        <div id="usage-stats" class="usage-grid"></div>
+
+        <div id="coaching-section" style="margin-top:24px">
+          <h3 style="font-size:15px;font-weight:600;margin-bottom:12px">Insights</h3>
+          <div id="coaching-nudges" class="coaching-list"></div>
+          <div id="coaching-empty" class="empty-state" style="display:none">
+            <p class="empty-icon">🎯</p>
+            <p class="empty-title">Keep going</p>
+            <p class="empty-desc">Insights will appear as you use Focus Block. They're based on your local data only.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Settings Tab -->
+      <section id="tab-settings" class="tab-content">
+        <div class="section-header">
+          <h2>Settings</h2>
+        </div>
+
+        <div class="settings-group">
+          <h3>Commitment phrase</h3>
+          <p class="section-desc">Your reason for focusing. You'll type it to override a block — a moment to remember why you set it.</p>
+          <div id="passphrase-current" style="display:none">
+            <p class="section-desc" style="margin-bottom:8px">Current phrase: <strong id="current-phrase-display"></strong></p>
+          </div>
+          <div id="passphrase-change-section">
+            <div id="passphrase-verify" style="display:none">
+              <label class="field-label">Type your current phrase first</label>
+              <input type="text" id="settings-verify-phrase" class="input" autocomplete="off" style="margin-bottom:8px">
+            </div>
+            <label class="field-label" id="new-phrase-label">Set your phrase</label>
+            <div class="input-row">
+              <input type="text" id="settings-new-phrase" class="input" placeholder="e.g. I'm building something important" autocomplete="off">
+              <button class="btn btn-primary" id="save-phrase-btn">Save</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3>Friction level</h3>
+          <p class="section-desc">How much resistance before you can override a block.</p>
+          <select class="input" id="friction-level" style="width:auto">
+            <option value="none">None — instant override</option>
+            <option value="wait">Short wait — 5 second pause</option>
+            <option value="passphrase" selected>Passphrase — type your commitment phrase</option>
+          </select>
+        </div>
+
+        <div class="settings-group">
+          <h3>Cooldown</h3>
+          <p class="section-desc">Seconds to wait before confirming "end block early." Gives you time to reconsider.</p>
+          <input type="number" class="input" id="cooldown-seconds" min="0" max="120" value="30" style="width:100px">
+        </div>
+
+        <div class="settings-group">
+          <h3>Site lists</h3>
+          <div class="section-header" style="margin-bottom:8px">
+            <p class="section-desc" style="margin-bottom:0">Reusable collections of sites. Attach a list to any schedule.</p>
+            <button class="btn btn-primary" id="add-list">+ New list</button>
+          </div>
+          <div id="lists-container" class="card-list"></div>
+          <div id="lists-empty" class="empty-state" style="display:none;padding:16px">
+            <p class="empty-desc">No lists yet. Lists let you group sites and reuse them across schedules.</p>
+            <button class="btn btn-primary" id="add-list-empty">Create a list</button>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3>Chrome sync</h3>
+          <p class="section-desc">Sync schedules, lists, and settings across your Chrome profiles. Usage data stays local.</p>
+          <div class="checkbox-row">
+            <label><input type="checkbox" id="sync-toggle"> Enable Chrome sync</label>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3>Data</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-secondary" id="export-btn">Export settings</button>
+            <button class="btn btn-secondary" id="import-btn">Import settings</button>
+            <input type="file" id="import-file" accept=".json" style="display:none">
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3>About</h3>
+          <p class="section-desc">Focus Block v0.2.0 — Free, fully local, zero data collection. Your browsing data never leaves your device.</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Schedule Editor Modal -->
+    <div class="modal-overlay" id="schedule-modal" style="display:none">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="modal-title">New schedule</h2>
+          <button class="modal-close" id="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <label class="field-label">Name</label>
+          <input type="text" id="sched-name" class="input" placeholder="e.g. Work focus">
+
+          <label class="field-label">Days</label>
+          <div class="day-chips" id="sched-days">
+            <button class="day-chip" data-day="1">Mon</button>
+            <button class="day-chip" data-day="2">Tue</button>
+            <button class="day-chip" data-day="3">Wed</button>
+            <button class="day-chip" data-day="4">Thu</button>
+            <button class="day-chip" data-day="5">Fri</button>
+            <button class="day-chip" data-day="6">Sat</button>
+            <button class="day-chip" data-day="0">Sun</button>
+          </div>
+          <div class="quick-days">
+            <button class="btn btn-small" id="days-weekdays">Weekdays</button>
+            <button class="btn btn-small" id="days-everyday">Every day</button>
+            <button class="btn btn-small" id="days-weekends">Weekends</button>
+          </div>
+
+          <div class="time-row">
+            <div class="time-field">
+              <label class="field-label">Start</label>
+              <input type="time" id="sched-start" class="input" value="09:00">
+            </div>
+            <div class="time-field">
+              <label class="field-label">End</label>
+              <input type="time" id="sched-end" class="input" value="17:00">
+            </div>
+          </div>
+          <p class="overnight-hint" id="overnight-hint" style="display:none">⏰ Overnight — ends the next morning</p>
+
+          <label class="field-label">Block these sites</label>
+          <div class="checkbox-row">
+            <label><input type="checkbox" id="sched-blackout"> Block everything except allowed sites</label>
+          </div>
+          <div id="sched-sites-section">
+            <div class="input-row">
+              <input type="text" id="sched-site-input" class="input" placeholder="e.g. youtube.com">
+              <button class="btn btn-secondary" id="sched-add-site">Add</button>
+            </div>
+            <div id="sched-site-chips" class="chip-list"></div>
+
+            <label class="field-label" style="margin-top:16px">Attach lists</label>
+            <div id="sched-list-chips" class="chip-list"></div>
+          </div>
+
+          <label class="field-label" style="margin-top:16px">Action</label>
+          <div class="action-row">
+            <label class="radio-label"><input type="radio" name="sched-action" value="block" checked> Show block page</label>
+            <label class="radio-label"><input type="radio" name="sched-action" value="redirect"> Redirect to URL</label>
+          </div>
+          <div id="redirect-url-section" style="display:none">
+            <input type="url" id="sched-redirect-url" class="input" placeholder="https://example.com" style="margin-top:8px">
+          </div>
+
+          <label class="field-label" style="margin-top:16px">Summary</label>
+          <p class="schedule-summary" id="sched-summary"></p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="modal-cancel">Cancel</button>
+          <button class="btn btn-primary" id="modal-save">Save schedule</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- List Editor Modal -->
+    <div class="modal-overlay" id="list-modal" style="display:none">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="list-modal-title">New list</h2>
+          <button class="modal-close" id="list-modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <label class="field-label">List name</label>
+          <input type="text" id="list-name" class="input" placeholder="e.g. Social media">
+
+          <label class="field-label">Sites</label>
+          <div class="input-row">
+            <input type="text" id="list-site-input" class="input" placeholder="e.g. twitter.com">
+            <button class="btn btn-secondary" id="list-add-site">Add</button>
+          </div>
+          <div id="list-site-chips" class="chip-list"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="list-modal-cancel">Cancel</button>
+          <button class="btn btn-primary" id="list-modal-save">Save list</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="storage.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

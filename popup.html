@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Focus Block</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup">
+    <div class="popup-header">
+      <h1>Focus Block</h1>
+      <button class="settings-btn" id="open-settings" title="Settings">⚙️</button>
+    </div>
+
+    <div id="status-section" class="section">
+      <div id="current-status"></div>
+    </div>
+
+    <div id="focus-section" class="section">
+      <div id="focus-active" style="display:none">
+        <div class="focus-status">
+          <span class="focus-label">🎯 Focus active</span>
+          <span class="focus-timer" id="focus-timer"></span>
+        </div>
+        <button class="btn btn-small btn-danger" id="end-focus">End focus</button>
+      </div>
+      <div id="focus-start">
+        <p class="section-label">Focus now</p>
+        <div class="focus-options">
+          <button class="btn btn-focus" data-minutes="25">25 min</button>
+          <button class="btn btn-focus" data-minutes="60">1 hour</button>
+          <button class="btn btn-focus" data-minutes="120">2 hours</button>
+        </div>
+        <label class="checkbox-small">
+          <input type="checkbox" id="focus-blackout"> Block everything
+        </label>
+      </div>
+    </div>
+
+    <div id="quick-block" class="section">
+      <p class="section-label">Quick block</p>
+      <div class="current-site" id="current-site-info"></div>
+    </div>
+  </div>
+  <script src="storage.js"></script>
+  <script src="matching.js"></script>
+  <script src="schedule-engine.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "Streaming",
+  "origin": "frozen",
+  "sites": [
+    "youtube.com",
+    "netflix.com",
+    "twitch.tv",
+    "disneyplus.com",
+    "hulu.com",
+    "hbomax.com",
+    "max.com",
+    "peacocktv.com",
+    "primevideo.com",
+    "crunchyroll.com",
+    "dailymotion.com",
+    "vimeo.com"
+  ]
+}
