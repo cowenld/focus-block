@@ -16,7 +16,7 @@ async function updateStatus() {
   if (result.blackout) {
     container.innerHTML = `
       <div class="status-card">
-        <div class="status-active">🛡️ Blocking active</div>
+        <div class="status-active">${icon('shield', 14)} Blocking active</div>
         <div class="status-detail">Blackout mode via ${esc(result.scheduleName)} — only allowed sites are reachable</div>
       </div>`;
   } else if (result.domains && result.domains.length > 0) {
@@ -24,7 +24,7 @@ async function updateStatus() {
     const names = activeSchedules.map(s => s.name).join(', ');
     container.innerHTML = `
       <div class="status-card">
-        <div class="status-active">🛡️ Blocking active</div>
+        <div class="status-active">${icon('shield', 14)} Blocking active</div>
         <div class="status-detail">${result.domains.length} site${result.domains.length !== 1 ? 's' : ''} blocked${names ? ' · ' + esc(names) : ''}</div>
       </div>`;
   } else {

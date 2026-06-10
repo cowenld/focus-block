@@ -27,7 +27,7 @@
         </div>
         <div id="schedules-list" class="card-list"></div>
         <div id="schedules-empty" class="empty-state" style="display:none">
-          <p class="empty-icon">📋</p>
+          <p class="empty-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg></p>
           <p class="empty-title">No schedules yet</p>
           <p class="empty-desc">Create a schedule to start blocking distracting sites on a recurring basis.</p>
           <button class="btn btn-primary" id="add-schedule-empty">Create your first schedule</button>
@@ -62,7 +62,7 @@
           <h3 style="font-size:15px;font-weight:600;margin-bottom:12px">Insights</h3>
           <div id="coaching-nudges" class="coaching-list"></div>
           <div id="coaching-empty" class="empty-state" style="display:none">
-            <p class="empty-icon">🎯</p>
+            <p class="empty-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></p>
             <p class="empty-title">Keep going</p>
             <p class="empty-desc">Insights will appear as you use Focus Block. They're based on your local data only.</p>
           </div>
@@ -184,7 +184,7 @@
               <input type="time" id="sched-end" class="input" value="17:00">
             </div>
           </div>
-          <p class="overnight-hint" id="overnight-hint" style="display:none">⏰ Overnight — ends the next morning</p>
+          <p class="overnight-hint" id="overnight-hint" style="display:none">Overnight — ends the next morning</p>
 
           <label class="field-label">Block these sites</label>
           <div class="checkbox-row">
@@ -247,6 +247,8 @@
   </div>
 
   <script src="storage.js"></script>
+  <script src="schedule-engine.js"></script>
+  <script src="icons.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

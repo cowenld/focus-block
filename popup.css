@@ -31,9 +31,13 @@ body {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 16px;
   padding: 4px;
+  color: #777;
+  display: inline-flex;
+  align-items: center;
 }
+.settings-btn:hover { color: #2c2c2c; }
+.settings-btn svg { display: block; }
 
 .section {
   margin-bottom: 16px;
@@ -59,6 +63,9 @@ body {
   color: #2c8c2c;
   font-weight: 500;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .status-inactive {
@@ -134,6 +141,9 @@ body {
 .focus-label {
   font-size: 14px;
   font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .focus-timer {

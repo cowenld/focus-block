@@ -241,7 +241,7 @@ body {
   text-align: center;
   padding: 48px 24px;
 }
-.empty-icon { font-size: 36px; margin-bottom: 12px; }
+.empty-icon { margin-bottom: 12px; color: #999; }
 .empty-title {
   font-size: 16px;
   font-weight: 600;
@@ -386,10 +386,12 @@ body {
   border: none;
   cursor: pointer;
   padding: 4px;
-  font-size: 16px;
   color: #777;
+  display: inline-flex;
+  align-items: center;
 }
 .icon-btn:hover { color: #2c2c2c; }
+.icon-btn svg { display: block; }
 
 .action-row {
   display: flex;
@@ -446,7 +448,7 @@ body {
   gap: 12px;
 }
 
-.coaching-icon { font-size: 20px; flex-shrink: 0; }
+.coaching-icon { flex-shrink: 0; color: #555; display: flex; align-items: center; }
 
 .coaching-text {
   font-size: 14px;
