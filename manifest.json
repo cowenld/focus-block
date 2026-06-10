@@ -33,7 +33,7 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "blocked.html", "blocked.css", "blocked.js",
+        "blocked.html", "blocked.css", "blocked.js", "icons.js",
         "presets/social.json", "presets/news.json", "presets/streaming.json"
       ],
       "matches": ["<all_urls>"]

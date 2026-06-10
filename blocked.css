@@ -20,7 +20,7 @@ body {
   padding: 48px 32px;
 }
 
-.icon { font-size: 48px; margin-bottom: 24px; }
+.icon { margin-bottom: 24px; color: #2c2c2c; }
 
 h1 {
   font-size: 28px;
@@ -97,7 +97,11 @@ h1 {
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
   text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
+.escape-btn svg { flex-shrink: 0; }
 .escape-btn:hover { border-color: #999; }
 .escape-secondary { color: #555; }
 .escape-danger { color: #b44; }
@@ -209,6 +213,7 @@ h1 {
   .reminder { color: #888; }
   .back-btn { background: #f0f0f0; color: #1a1a1a; }
   .back-btn:hover { background: #ddd; }
+  .icon { color: #e0e0e0; }
   .escape-btn { background: #252525; border-color: #333; color: #ccc; }
   .escape-btn:hover { border-color: #888; }
   .escape-danger { color: #e66; }

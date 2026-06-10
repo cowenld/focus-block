@@ -72,8 +72,8 @@ async function renderSchedules() {
         <div class="card-header">
           <span class="card-title">${esc(s.name)}</span>
           <div class="card-actions">
-            <button class="icon-btn" data-action="edit" data-id="${escapedId}" title="Edit">✏️</button>
-            <button class="icon-btn" data-action="delete" data-id="${escapedId}" title="Delete">🗑️</button>
+            <button class="icon-btn" data-action="edit" data-id="${escapedId}" title="Edit">${icon('pencil')}</button>
+            <button class="icon-btn" data-action="delete" data-id="${escapedId}" title="Delete">${icon('trash')}</button>
             <label class="toggle">
               <input type="checkbox" ${s.enabled ? 'checked' : ''} data-action="toggle" data-id="${escapedId}">
               <span class="toggle-slider"></span>
@@ -89,11 +89,31 @@ async function renderSchedules() {
 window.toggleSchedule = async function(id, enabled) {
   const schedules = await getSchedules();
   const schedule = schedules.find(s => s.id === id);
-  if (schedule) {
-    schedule.enabled = enabled;
-    await saveSchedule(schedule);
-    chrome.runtime.sendMessage({ type: 'refreshRules' });
+  if (!schedule) return;
+
+  if (!enabled && isScheduleActive(schedule)) {
+    const settings = await getSettings();
+    const frictionLevel = settings.frictionLevel || 'passphrase';
+
+    if (frictionLevel === 'passphrase' && settings.passphrase) {
+      const typed = prompt('Type your commitment phrase to disable this schedule:');
+      if (typed !== settings.passphrase) {
+        const checkbox = document.querySelector(`[data-action="toggle"][data-id="${CSS.escape(id)}"]`);
+        if (checkbox) checkbox.checked = true;
+        return;
+      }
+    } else if (frictionLevel === 'wait') {
+      if (!confirm('This schedule is currently active. Disabling it will unblock sites immediately. Continue?')) {
+        const checkbox = document.querySelector(`[data-action="toggle"][data-id="${CSS.escape(id)}"]`);
+        if (checkbox) checkbox.checked = true;
+        return;
+      }
+    }
   }
+
+  schedule.enabled = enabled;
+  await saveSchedule(schedule);
+  chrome.runtime.sendMessage({ type: 'refreshRules' });
 };
 
 window.removeSchedule = async function(id) {
@@ -410,8 +430,8 @@ async function renderLists() {
         <div class="card-header">
           <span class="card-title">${esc(l.name)}</span>
           <div class="card-actions">
-            <button class="icon-btn" onclick="editList('${l.id}')" title="Edit">✏️</button>
-            <button class="icon-btn" onclick="removeList('${l.id}')" title="Delete">🗑️</button>
+            <button class="icon-btn" onclick="editList('${l.id}')" title="Edit">${icon('pencil')}</button>
+            <button class="icon-btn" onclick="removeList('${l.id}')" title="Delete">${icon('trash')}</button>
           </div>
         </div>
         <div class="card-subtitle">${l.sites.length} sites · ${usedStr}</div>
@@ -564,28 +584,28 @@ async function renderUsage() {
 
   if (topSites.length > 0 && topSites[0][1] >= 10) {
     nudges.push({
-      icon: '🔄',
+      iconName: 'refresh-cw',
       text: `${topSites[0][0]} pulled you back ${topSites[0][1]} times this week. That's your focus working — each block is a moment you chose your priorities.`
     });
   }
 
   if (weekBlocks > 0 && weekEscapes === 0) {
     nudges.push({
-      icon: '💪',
+      iconName: 'zap',
       text: `${weekBlocks} blocks this week and zero overrides. You're building a strong focus habit.`
     });
   }
 
   if (todayBlocks > 5 && todaySnoozes === 0) {
     nudges.push({
-      icon: '🎯',
+      iconName: 'target',
       text: `${todayBlocks} blocks deflected today without a single snooze. That's discipline.`
     });
   }
 
   if (weekBlocks >= 20) {
     nudges.push({
-      icon: '📈',
+      iconName: 'trending-up',
       text: `${weekBlocks} blocks this week. Your focused time is adding up — keep going.`
     });
   }
@@ -593,7 +613,7 @@ async function renderUsage() {
   if (topSites.length >= 3) {
     const names = topSites.slice(0, 3).map(([d]) => d).join(', ');
     nudges.push({
-      icon: '📊',
+      iconName: 'bar-chart',
       text: `Your top distractions this week: ${names}. Knowing is half the battle.`
     });
   }
@@ -606,7 +626,7 @@ async function renderUsage() {
     coachingEmpty.style.display = 'none';
     nudgesContainer.innerHTML = nudges.map((n, i) => `
       <div class="coaching-card" id="nudge-${i}">
-        <span class="coaching-icon">${n.icon}</span>
+        <span class="coaching-icon">${icon(n.iconName, 20)}</span>
         <span class="coaching-text">${esc(n.text)}</span>
         <button class="coaching-dismiss" onclick="this.parentElement.remove()" title="Dismiss">&times;</button>
       </div>
