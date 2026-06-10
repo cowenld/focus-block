@@ -33,6 +33,19 @@ async function renderSchedules() {
   container.style.display = 'flex';
   empty.style.display = 'none';
 
+  // Event delegation for schedule cards
+  container.onclick = (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    if (btn.dataset.action === 'edit') editSchedule(id);
+    else if (btn.dataset.action === 'delete') removeSchedule(id);
+  };
+  container.onchange = (e) => {
+    const input = e.target.closest('[data-action="toggle"]');
+    if (input) toggleSchedule(input.dataset.id, input.checked);
+  };
+
   container.innerHTML = schedules.map(s => {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const days = (s.days || []).map(d => dayNames[d]).join(', ') || 'Every day';
@@ -49,24 +62,25 @@ async function renderSchedules() {
     } else {
       const parts = [];
       if (siteCount > 0) parts.push(`${siteCount} site${siteCount !== 1 ? 's' : ''}`);
-      if (listCount > 0) parts.push(listNames.join(', '));
+      if (listCount > 0) parts.push(listNames.map(n => esc(n)).join(', '));
       sitesDesc = parts.join(' + ') || 'No sites';
     }
 
+    const escapedId = esc(s.id);
     return `
       <div class="card">
         <div class="card-header">
           <span class="card-title">${esc(s.name)}</span>
           <div class="card-actions">
-            <button class="icon-btn" onclick="editSchedule('${s.id}')" title="Edit">✏️</button>
-            <button class="icon-btn" onclick="removeSchedule('${s.id}')" title="Delete">🗑️</button>
+            <button class="icon-btn" data-action="edit" data-id="${escapedId}" title="Edit">✏️</button>
+            <button class="icon-btn" data-action="delete" data-id="${escapedId}" title="Delete">🗑️</button>
             <label class="toggle">
-              <input type="checkbox" ${s.enabled ? 'checked' : ''} onchange="toggleSchedule('${s.id}', this.checked)">
+              <input type="checkbox" ${s.enabled ? 'checked' : ''} data-action="toggle" data-id="${escapedId}">
               <span class="toggle-slider"></span>
             </label>
           </div>
         </div>
-        <div class="card-subtitle">${days} · ${s.startTime}–${s.endTime} · ${sitesDesc}</div>
+        <div class="card-subtitle">${days} · ${s.startTime}–${s.endTime} · ${s.action === 'redirect' ? 'redirect' : 'block page'} · ${sitesDesc}</div>
       </div>
     `;
   }).join('');
@@ -114,6 +128,14 @@ function openScheduleModal(schedule) {
 
   modalSites = schedule ? [...(schedule.adHocSites || [])] : [];
   modalListIds = schedule ? [...(schedule.listIds || [])] : [];
+
+  // Action (block page vs redirect)
+  const action = schedule ? (schedule.action || 'block') : 'block';
+  document.querySelectorAll('input[name="sched-action"]').forEach(r => {
+    r.checked = r.value === action;
+  });
+  document.getElementById('sched-redirect-url').value = schedule ? (schedule.redirectUrl || '') : '';
+  document.getElementById('redirect-url-section').style.display = action === 'redirect' ? 'block' : 'none';
 
   renderModalSites();
   renderModalListChips();
@@ -219,6 +241,14 @@ async function saveCurrentSchedule() {
   const endTime = document.getElementById('sched-end').value || '17:00';
   const blackout = document.getElementById('sched-blackout').checked;
 
+  const action = document.querySelector('input[name="sched-action"]:checked').value;
+  const redirectUrl = document.getElementById('sched-redirect-url').value.trim();
+
+  if (action === 'redirect' && redirectUrl && !redirectUrl.startsWith('https://') && !redirectUrl.startsWith('http://')) {
+    alert('Redirect URL must start with https:// or http://');
+    return;
+  }
+
   const schedule = {
     id: editingScheduleId || undefined,
     name,
@@ -226,6 +256,8 @@ async function saveCurrentSchedule() {
     startTime,
     endTime,
     blackout,
+    action,
+    redirectUrl: action === 'redirect' ? redirectUrl : '',
     adHocSites: modalSites,
     listIds: modalListIds,
     enabled: true
@@ -246,6 +278,14 @@ async function saveCurrentSchedule() {
 document.querySelectorAll('.day-chip').forEach(chip => {
   chip.addEventListener('click', () => {
     chip.classList.toggle('active');
+    updateSummary();
+  });
+});
+
+// Action radio toggle
+document.querySelectorAll('input[name="sched-action"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.getElementById('redirect-url-section').style.display = r.value === 'redirect' && r.checked ? 'block' : 'none';
     updateSummary();
   });
 });
@@ -467,12 +507,251 @@ function esc(str) {
   return div.innerHTML;
 }
 
+// ─── Usage Dashboard ───
+
+async function renderUsage() {
+  const usage = await getUsage();
+  const statsContainer = document.getElementById('usage-stats');
+  const nudgesContainer = document.getElementById('coaching-nudges');
+  const coachingEmpty = document.getElementById('coaching-empty');
+
+  const today = new Date().toISOString().slice(0, 10);
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  // Aggregate stats
+  let todayBlocks = 0, weekBlocks = 0, todaySnoozes = 0, weekEscapes = 0;
+  const siteCounts = {};
+
+  for (const [key, count] of Object.entries(usage.blockCounts || {})) {
+    const [domain, date] = key.split('|');
+    if (date === today) todayBlocks += count;
+    if (date >= weekAgo) {
+      weekBlocks += count;
+      siteCounts[domain] = (siteCounts[domain] || 0) + count;
+    }
+  }
+  for (const [key, count] of Object.entries(usage.snoozeCounts || {})) {
+    const [, date] = key.split('|');
+    if (date === today) todaySnoozes += count;
+  }
+  for (const [key, count] of Object.entries(usage.escapeCounts || {})) {
+    const [, date] = key.split('|');
+    if (date >= weekAgo) weekEscapes += count;
+  }
+
+  statsContainer.innerHTML = `
+    <div class="usage-stat">
+      <div class="usage-number">${todayBlocks}</div>
+      <div class="usage-label">Blocks today</div>
+    </div>
+    <div class="usage-stat">
+      <div class="usage-number">${weekBlocks}</div>
+      <div class="usage-label">Blocks this week</div>
+    </div>
+    <div class="usage-stat">
+      <div class="usage-number">${todaySnoozes}</div>
+      <div class="usage-label">Snoozes today</div>
+    </div>
+    <div class="usage-stat">
+      <div class="usage-number">${weekEscapes}</div>
+      <div class="usage-label">Overrides this week</div>
+    </div>
+  `;
+
+  // Coaching nudges — rule-based, local, never shaming
+  const nudges = [];
+  const topSites = Object.entries(siteCounts).sort((a, b) => b[1] - a[1]);
+
+  if (topSites.length > 0 && topSites[0][1] >= 10) {
+    nudges.push({
+      icon: '🔄',
+      text: `${topSites[0][0]} pulled you back ${topSites[0][1]} times this week. That's your focus working — each block is a moment you chose your priorities.`
+    });
+  }
+
+  if (weekBlocks > 0 && weekEscapes === 0) {
+    nudges.push({
+      icon: '💪',
+      text: `${weekBlocks} blocks this week and zero overrides. You're building a strong focus habit.`
+    });
+  }
+
+  if (todayBlocks > 5 && todaySnoozes === 0) {
+    nudges.push({
+      icon: '🎯',
+      text: `${todayBlocks} blocks deflected today without a single snooze. That's discipline.`
+    });
+  }
+
+  if (weekBlocks >= 20) {
+    nudges.push({
+      icon: '📈',
+      text: `${weekBlocks} blocks this week. Your focused time is adding up — keep going.`
+    });
+  }
+
+  if (topSites.length >= 3) {
+    const names = topSites.slice(0, 3).map(([d]) => d).join(', ');
+    nudges.push({
+      icon: '📊',
+      text: `Your top distractions this week: ${names}. Knowing is half the battle.`
+    });
+  }
+
+  if (nudges.length === 0) {
+    nudgesContainer.style.display = 'none';
+    coachingEmpty.style.display = 'block';
+  } else {
+    nudgesContainer.style.display = 'flex';
+    coachingEmpty.style.display = 'none';
+    nudgesContainer.innerHTML = nudges.map((n, i) => `
+      <div class="coaching-card" id="nudge-${i}">
+        <span class="coaching-icon">${n.icon}</span>
+        <span class="coaching-text">${esc(n.text)}</span>
+        <button class="coaching-dismiss" onclick="this.parentElement.remove()" title="Dismiss">&times;</button>
+      </div>
+    `).join('');
+  }
+}
+
+// ─── Settings ───
+
+async function renderSettings() {
+  const settings = await getSettings();
+
+  // Passphrase
+  const currentDisplay = document.getElementById('current-phrase-display');
+  const currentSection = document.getElementById('passphrase-current');
+  const verifySection = document.getElementById('passphrase-verify');
+  const newLabel = document.getElementById('new-phrase-label');
+
+  if (settings.passphrase) {
+    currentSection.style.display = 'block';
+    currentDisplay.textContent = settings.passphrase;
+    verifySection.style.display = 'block';
+    newLabel.textContent = 'New phrase';
+  } else {
+    currentSection.style.display = 'none';
+    verifySection.style.display = 'none';
+    newLabel.textContent = 'Set your phrase';
+  }
+
+  // Friction level
+  document.getElementById('friction-level').value = settings.frictionLevel || 'passphrase';
+
+  // Cooldown
+  document.getElementById('cooldown-seconds').value = settings.cooldownSeconds || 30;
+
+  // Sync
+  document.getElementById('sync-toggle').checked = settings.syncEnabled || false;
+}
+
+document.getElementById('save-phrase-btn').addEventListener('click', async () => {
+  const settings = await getSettings();
+  const newPhrase = document.getElementById('settings-new-phrase').value.trim();
+  if (!newPhrase) return;
+
+  // Recursive: if there's an existing passphrase, verify it first
+  if (settings.passphrase) {
+    const verify = document.getElementById('settings-verify-phrase').value;
+    if (verify !== settings.passphrase) {
+      alert('Current phrase doesn\'t match. Type your existing phrase to change it.');
+      return;
+    }
+  }
+
+  await saveSettings({ passphrase: newPhrase });
+  document.getElementById('settings-new-phrase').value = '';
+  document.getElementById('settings-verify-phrase').value = '';
+  renderSettings();
+});
+
+document.getElementById('friction-level').addEventListener('change', async () => {
+  await saveSettings({ frictionLevel: document.getElementById('friction-level').value });
+});
+
+document.getElementById('cooldown-seconds').addEventListener('change', async () => {
+  await saveSettings({ cooldownSeconds: parseInt(document.getElementById('cooldown-seconds').value) || 30 });
+});
+
+document.getElementById('sync-toggle').addEventListener('change', async () => {
+  const enabled = document.getElementById('sync-toggle').checked;
+
+  if (!enabled) {
+    await saveSettings({ syncEnabled: false });
+    return;
+  }
+
+  // If another profile already synced a config, offer to adopt it
+  // instead of silently overwriting it with this profile's config.
+  let remote = null;
+  try {
+    remote = (await chrome.storage.sync.get('focusBlockSync')).focusBlockSync;
+  } catch { /* sync unavailable */ }
+
+  if (remote && (remote.schedules || []).length > 0) {
+    const useRemote = confirm(
+      'Found synced settings from another Chrome profile.\n\n' +
+      'OK — use the synced settings here (replaces this profile\'s schedules, lists, and allowed sites)\n' +
+      'Cancel — keep this profile\'s settings and overwrite the synced copy'
+    );
+    if (useRemote) {
+      await applySyncedConfig(remote, true);
+    }
+  }
+
+  // saveSettings -> setData pushes the (possibly adopted) config to sync
+  await saveSettings({ syncEnabled: true });
+  chrome.runtime.sendMessage({ type: 'refreshRules' });
+  await renderSchedules();
+  await renderAllowlist();
+  await renderLists();
+  await renderSettings();
+});
+
+// Export
+document.getElementById('export-btn').addEventListener('click', async () => {
+  const json = await exportData();
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `focus-block-export-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// Import
+document.getElementById('import-btn').addEventListener('click', () => {
+  document.getElementById('import-file').click();
+});
+
+document.getElementById('import-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    await importData(text);
+    chrome.runtime.sendMessage({ type: 'refreshRules' });
+    alert('Settings imported successfully.');
+    renderSchedules();
+    renderAllowlist();
+    renderLists();
+    renderSettings();
+  } catch (err) {
+    alert('Import failed: ' + err.message);
+  }
+  e.target.value = '';
+});
+
 // ─── Init ───
 
 async function init() {
   await renderSchedules();
   await renderAllowlist();
   await renderLists();
+  await renderUsage();
+  await renderSettings();
 }
 
 init();

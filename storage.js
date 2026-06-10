@@ -3,16 +3,22 @@ const DEFAULT_DATA = {
   lists: [],
   allowlist: [],
   settings: {
-    frictionLevel: 'none',
+    frictionLevel: 'passphrase',
     passphrase: '',
     theme: 'system',
-    syncEnabled: false
+    syncEnabled: false,
+    cooldownSeconds: 30,
+    snoozeDurationMinutes: 5,
+    onboardingComplete: false
   },
   focusSession: null,
   usage: {
     blockCounts: {},
-    escapeCounts: {}
-  }
+    escapeCounts: {},
+    snoozeCounts: {},
+    siteTime: {}
+  },
+  commitmentEndTimes: {}
 };
 
 function generateId() {
@@ -29,7 +35,41 @@ async function getData() {
 }
 
 async function setData(data) {
+  data.updatedAt = Date.now();
   await chrome.storage.local.set({ focusBlock: data });
+
+  // Optional sync: mirror config (not usage) to chrome.storage.sync
+  if (data.settings && data.settings.syncEnabled) {
+    const syncPayload = {
+      updatedAt: data.updatedAt,
+      schedules: data.schedules,
+      lists: data.lists,
+      allowlist: data.allowlist,
+      settings: data.settings
+    };
+    try {
+      await chrome.storage.sync.set({ focusBlockSync: syncPayload });
+    } catch { /* quota exceeded or sync unavailable */ }
+  }
+}
+
+// Apply a synced config payload from another Chrome profile.
+// Last-write-wins: only applies if the payload is newer than local data
+// (pass force=true to skip the timestamp check, e.g. when first enabling sync).
+// Writes local-only — never echoes back to chrome.storage.sync.
+async function applySyncedConfig(payload, force = false) {
+  if (!payload || typeof payload !== 'object') return false;
+  const data = await getData();
+  if (!force && (payload.updatedAt || 0) <= (data.updatedAt || 0)) return false;
+
+  data.schedules = payload.schedules || [];
+  data.lists = payload.lists || [];
+  data.allowlist = payload.allowlist || [];
+  // Merge settings but keep this profile's own sync toggle
+  data.settings = { ...data.settings, ...(payload.settings || {}), syncEnabled: data.settings.syncEnabled };
+  data.updatedAt = payload.updatedAt || Date.now();
+  await chrome.storage.local.set({ focusBlock: data });
+  return true;
 }
 
 async function getSchedules() {
@@ -118,5 +158,75 @@ async function saveFocusSession(session) {
 async function clearFocusSession() {
   const data = await getData();
   data.focusSession = null;
+  await setData(data);
+}
+
+async function getUsage() {
+  const data = await getData();
+  return data.usage || { blockCounts: {}, escapeCounts: {}, snoozeCounts: {}, siteTime: {} };
+}
+
+async function recordBlock(domain, scheduleName) {
+  const data = await getData();
+  if (!data.usage) data.usage = { blockCounts: {}, escapeCounts: {}, snoozeCounts: {}, siteTime: {} };
+  const key = `${domain}|${new Date().toISOString().slice(0, 10)}`;
+  data.usage.blockCounts[key] = (data.usage.blockCounts[key] || 0) + 1;
+  await setData(data);
+}
+
+async function recordEscape(domain, type) {
+  const data = await getData();
+  if (!data.usage) data.usage = { blockCounts: {}, escapeCounts: {}, snoozeCounts: {}, siteTime: {} };
+  const key = `${domain}|${new Date().toISOString().slice(0, 10)}`;
+  if (type === 'snooze') {
+    data.usage.snoozeCounts[key] = (data.usage.snoozeCounts[key] || 0) + 1;
+  } else {
+    data.usage.escapeCounts[key] = (data.usage.escapeCounts[key] || 0) + 1;
+  }
+  await setData(data);
+}
+
+async function getCommitmentEndTimes() {
+  const data = await getData();
+  return data.commitmentEndTimes || {};
+}
+
+async function setCommitmentEndTime(scheduleId, endTime) {
+  const data = await getData();
+  if (!data.commitmentEndTimes) data.commitmentEndTimes = {};
+  data.commitmentEndTimes[scheduleId] = endTime;
+  await setData(data);
+}
+
+async function clearCommitmentEndTime(scheduleId) {
+  const data = await getData();
+  if (data.commitmentEndTimes) {
+    delete data.commitmentEndTimes[scheduleId];
+    await setData(data);
+  }
+}
+
+async function exportData() {
+  const data = await getData();
+  return JSON.stringify({
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    schedules: data.schedules,
+    lists: data.lists,
+    allowlist: data.allowlist,
+    settings: data.settings
+  }, null, 2);
+}
+
+async function importData(jsonString) {
+  const imported = JSON.parse(jsonString);
+  if (!imported.version) throw new Error('Invalid Focus Block export file');
+  const data = await getData();
+  data.schedules = imported.schedules || [];
+  data.lists = imported.lists || [];
+  data.allowlist = imported.allowlist || [];
+  if (imported.settings) {
+    data.settings = { ...data.settings, ...imported.settings };
+  }
   await setData(data);
 }

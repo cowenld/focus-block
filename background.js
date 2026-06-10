@@ -25,9 +25,13 @@ async function updateBlockingRules() {
         }
       });
     } else {
-      // C1 fix: filter out allowlisted domains before creating DNR rules
+      // Filter out allowlisted and snoozed domains
+      const data = await getData();
+      const snoozeUntil = data._snoozeUntil || {};
+      const now2 = Date.now();
       const filteredDomains = result.domains.filter(d =>
-        !allowlistEntries.some(a => domainMatches(d, a))
+        !allowlistEntries.some(a => domainMatches(d, a)) &&
+        !(snoozeUntil[d] && snoozeUntil[d] > now2)
       );
 
       const domainScheduleMap = {};
@@ -45,17 +49,29 @@ async function updateBlockingRules() {
         }
       }
 
+      // Build redirect schedule map for redirect-action schedules
+      const domainRedirectMap = {};
+      for (const schedule of schedules) {
+        if (!isScheduleActive(schedule, now)) continue;
+        if (schedule.action === 'redirect' && schedule.redirectUrl) {
+          const effective = getEffectiveBlocklist(schedule, lists);
+          for (const d of effective) {
+            if (!domainRedirectMap[d]) domainRedirectMap[d] = schedule.redirectUrl;
+          }
+        }
+      }
+
       for (const domain of filteredDomains) {
         const sName = domainScheduleMap[domain] || '';
+        const redirectUrl = domainRedirectMap[domain];
+        const ruleAction = redirectUrl
+          ? { type: 'redirect', redirect: { url: redirectUrl } }
+          : { type: 'redirect', redirect: { extensionPath: `/blocked.html?domain=${encodeURIComponent(domain)}&schedule=${encodeURIComponent(sName)}` } };
+
         rules.push({
           id: ruleId++,
           priority: 1,
-          action: {
-            type: 'redirect',
-            redirect: {
-              extensionPath: `/blocked.html?domain=${encodeURIComponent(domain)}&schedule=${encodeURIComponent(sName)}`
-            }
-          },
+          action: ruleAction,
           condition: {
             urlFilter: `||${domain}`,
             resourceTypes: ['main_frame']
@@ -156,14 +172,46 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
   await checkAndRedirectTab(details.tabId, details.url);
 });
 
+// C1 fix: record blocks via onBeforeNavigate (fires before DNR redirect)
+chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
+  if (details.frameId !== 0) return;
+  const url = details.url;
+  if (url.startsWith('chrome://') || url.startsWith('chrome-extension://')) return;
+  let hostname;
+  try { hostname = new URL(url).hostname; } catch { return; }
+
+  const state = (await chrome.storage.local.get('_blockState'))._blockState;
+  if (!state) return;
+
+  if (state.blackout) {
+    const isAllowed = state.allowlist.some(d => domainMatches(hostname, d));
+    if (!isAllowed) await recordBlock(hostname, state.scheduleName || 'Blackout');
+  } else if (state.domains) {
+    for (const domain of state.domains) {
+      if (domainMatches(hostname, domain)) {
+        await recordBlock(hostname, '');
+        break;
+      }
+    }
+  }
+});
+
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === ALARM_NAME) {
     await updateBlockingRules();
     await recheckAllTabs();
     scheduleNextAlarm();
-  }
-  if (alarm.name === 'focusblock-focus-end') {
+  } else if (alarm.name === 'focusblock-focus-end') {
     await clearFocusSession();
+    await updateBlockingRules();
+    await recheckAllTabs();
+  } else if (alarm.name.startsWith('snooze-end-')) {
+    const domain = alarm.name.replace('snooze-end-', '');
+    const data = await getData();
+    if (data._snoozeUntil) {
+      delete data._snoozeUntil[domain];
+      await setData(data);
+    }
     await updateBlockingRules();
     await recheckAllTabs();
   }
@@ -181,7 +229,40 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
     await updateBlockingRules();
     scheduleNextAlarm();
   }
+
+  // Sync read-back: config changed on another Chrome profile
+  if (area === 'sync' && changes.focusBlockSync && changes.focusBlockSync.newValue) {
+    const settings = await getSettings();
+    if (!settings.syncEnabled) return;
+    // Last-write-wins guard inside applySyncedConfig also skips our own
+    // writes echoing back (their updatedAt equals local updatedAt).
+    isUpdatingRules = true;
+    let applied = false;
+    try {
+      applied = await applySyncedConfig(changes.focusBlockSync.newValue);
+    } finally {
+      isUpdatingRules = false;
+    }
+    if (applied) {
+      await updateBlockingRules();
+      await recheckAllTabs();
+      scheduleNextAlarm();
+    }
+  }
 });
+
+// Pull synced config on browser/extension startup (catches changes made
+// on other profiles while this one wasn't running).
+async function pullSyncedConfig() {
+  const settings = await getSettings();
+  if (!settings.syncEnabled) return;
+  try {
+    const res = await chrome.storage.sync.get('focusBlockSync');
+    if (res.focusBlockSync) {
+      await applySyncedConfig(res.focusBlockSync);
+    }
+  } catch { /* sync unavailable */ }
+}
 
 // C2 fix: wrap all async message handlers with error handling
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -228,15 +309,108 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     })().catch(err => sendResponse({ error: err.message }));
     return true;
   }
+  if (message.type === 'snooze') {
+    (async () => {
+      const settings = await getSettings();
+      const minutes = settings.snoozeDurationMinutes || 5;
+      const data = await getData();
+      if (!data._snoozeUntil) data._snoozeUntil = {};
+      data._snoozeUntil[message.domain] = Date.now() + (minutes * 60 * 1000);
+      await setData(data);
+      await recordEscape(message.domain, 'snooze');
+      chrome.alarms.create(`snooze-end-${message.domain}`, { delayInMinutes: minutes });
+      await updateBlockingRules();
+      sendResponse({ success: true, minutes });
+    })().catch(err => sendResponse({ error: err.message }));
+    return true;
+  }
+  if (message.type === 'allowPermanently') {
+    (async () => {
+      const allowlist = await getAllowlist();
+      if (!allowlist.includes(message.domain)) {
+        allowlist.push(message.domain);
+        await saveAllowlist(allowlist);
+      }
+      await recordEscape(message.domain, 'allow');
+      await updateBlockingRules();
+      sendResponse({ success: true });
+    })().catch(err => sendResponse({ error: err.message }));
+    return true;
+  }
+  if (message.type === 'endBlockEarly') {
+    (async () => {
+      isUpdatingRules = true;
+      try {
+        const schedules = await getSchedules();
+        const lists = await getLists();
+        const now = new Date();
+        for (const schedule of schedules) {
+          if (!isScheduleActive(schedule, now)) continue;
+          const effective = getEffectiveBlocklist(schedule, lists);
+          if (effective.some(d => domainMatches(message.domain, d)) || schedule.blackout) {
+            schedule.enabled = false;
+            await saveSchedule(schedule);
+          // Store commitment end time so resume-on-re-enable works
+          const [endH, endM] = schedule.endTime.split(':').map(Number);
+          const endDate = new Date(now);
+          endDate.setHours(endH, endM, 0, 0);
+          if (endDate <= now) endDate.setDate(endDate.getDate() + 1);
+          await setCommitmentEndTime(schedule.id, endDate.getTime());
+        }
+      }
+        await recordEscape(message.domain, 'endEarly');
+      } finally {
+        isUpdatingRules = false;
+      }
+      await updateBlockingRules();
+      await recheckAllTabs();
+      sendResponse({ success: true });
+    })().catch(err => { isUpdatingRules = false; sendResponse({ error: err.message }); });
+    return true;
+  }
+  if (message.type === 'getSettings') {
+    (async () => {
+      const settings = await getSettings();
+      sendResponse({ settings });
+    })().catch(err => sendResponse({ error: err.message }));
+    return true;
+  }
 });
 
-chrome.runtime.onInstalled.addListener(async () => {
+// Resume-on-re-enable: check commitment end times on startup
+async function checkCommitmentEndTimes() {
+  const endTimes = await getCommitmentEndTimes();
+  const schedules = await getSchedules();
+  const now = Date.now();
+  for (const schedule of schedules) {
+    const commitEnd = endTimes[schedule.id];
+    if (commitEnd && commitEnd > now && !schedule.enabled) {
+      schedule.enabled = true;
+      await saveSchedule(schedule);
+      await clearCommitmentEndTime(schedule.id);
+    } else if (commitEnd && commitEnd <= now) {
+      await clearCommitmentEndTime(schedule.id);
+    }
+  }
+}
+
+chrome.runtime.onInstalled.addListener(async (details) => {
   await getData();
+  await pullSyncedConfig();
+  await checkCommitmentEndTimes();
   await updateBlockingRules();
   scheduleNextAlarm();
+  if (details.reason === 'install') {
+    const settings = await getSettings();
+    if (!settings.onboardingComplete) {
+      chrome.tabs.create({ url: chrome.runtime.getURL('onboarding.html') });
+    }
+  }
 });
 
 chrome.runtime.onStartup.addListener(async () => {
+  await pullSyncedConfig();
+  await checkCommitmentEndTimes();
   await updateBlockingRules();
   scheduleNextAlarm();
 });

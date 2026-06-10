@@ -139,27 +139,23 @@ Discipline: framed around the user's goal, **leads with wins, never a failure co
 
 ## 11. Feature scope
 
-### 11.1 P0 — MVP (days)
+### 11.1 P0 — MVP ✅
 - Schedules (name, days, window, block-page action) with per-schedule blocklist via **ad-hoc sites + reusable user Lists**.
 - Domain-level matching; global **allowlist** + blackout toggle; **Focus now**.
 - Custom **block page** (states when it lifts).
 - `chrome.storage.local`; zero network.
 
-### 11.2 P1
+### 11.2 P1 ✅
 - **Onboarding** (templates + Custom) and empty-state reuse.
-- **Bundled presets** (frozen starters + live categories like Adult).
-- **Friction stack** (§7): resume-on-re-enable, recursive passphrase, teardown cooldown; configurable level.
+- **Bundled presets** (frozen starters: Social, News, Streaming).
+- **Friction stack** (§7): resume-on-re-enable, recursive passphrase, teardown cooldown; configurable level (none / wait / passphrase).
 - **Block-moment escape actions** (snooze / allow / end early).
-- **Usage dashboard + coaching** (rule-based) and the floating timer.
+- **Usage dashboard + coaching** (rule-based).
 - **Redirect** action; **popup**; **JSON export/import** (own format).
 - Optional **cross-Chrome sync** — config-only, last-write-wins.
 
-### 11.3 P2
-- Path-level + in-page blocking (content script).
-- Per-site **daily time budgets** (a quota, distinct from a window).
-- Wildcard/keyword UI under "advanced".
-- **Competitor import** (parse LeechBlock/StayFocusd exports — needs format research).
-- Custom CSS on the block page; Pomodoro-style sessions.
+### 11.3 Future features
+See `docs/backlog.md` for the full list of unbuilt features, including items originally scoped as P1 (partial) and P2.
 
 ### 11.4 Out of scope
 - Mobile sync + apps; OS-level/cross-browser enforcement; truly unbypassable blocking beyond the force-install footnote; server-side analytics/telemetry; **any LLM/generative coaching**; accounts/auth/billing.

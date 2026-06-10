@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Focus Block</title>
+  <link rel="stylesheet" href="onboarding.css">
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <div class="hero-icon">🛡️</div>
+      <h1>Focus Block</h1>
+      <p class="tagline">A calm commitment device for your focus. Free, private, fully yours.</p>
+    </div>
+
+    <div class="templates">
+      <h2>Get started in one tap</h2>
+      <p class="templates-desc">Pick a template — you can always change it later.</p>
+
+      <div class="template-grid">
+        <button class="template-card" data-template="work">
+          <span class="template-icon">💼</span>
+          <span class="template-name">Work focus</span>
+          <span class="template-desc">Block social media, weekdays, 9am–5pm</span>
+        </button>
+
+        <button class="template-card" data-template="bedtime">
+          <span class="template-icon">🌙</span>
+          <span class="template-name">Bedtime</span>
+          <span class="template-desc">Block social + streaming, every day, 10pm–7am</span>
+        </button>
+
+        <button class="template-card" data-template="deepwork">
+          <span class="template-icon">🎯</span>
+          <span class="template-name">Deep work</span>
+          <span class="template-desc">Block everything except your essentials, on demand</span>
+        </button>
+
+        <button class="template-card" data-template="custom">
+          <span class="template-icon">✏️</span>
+          <span class="template-name">Custom</span>
+          <span class="template-desc">Pick your own sites, days, and times</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="alt-actions">
+      <button class="link-btn" id="skip-btn">Start from scratch</button>
+    </div>
+
+    <div id="passphrase-nudge" class="nudge" style="display:none">
+      <div class="nudge-content">
+        <p class="nudge-text">✅ Your schedule is live! Want to make it stick?</p>
+        <p class="nudge-sub">Set a commitment phrase — a short reminder of <em>why</em> you're focusing. You'll type it to override a block.</p>
+        <div class="nudge-input-row">
+          <input type="text" id="passphrase-input" class="input" placeholder="e.g. I'm building something important">
+          <button class="btn btn-primary" id="save-passphrase">Set phrase</button>
+        </div>
+        <button class="link-btn" id="skip-passphrase">Skip for now</button>
+      </div>
+    </div>
+
+    <div id="confirmation" class="confirmation" style="display:none">
+      <div class="confirm-icon">✅</div>
+      <p class="confirm-text" id="confirm-text"></p>
+      <button class="btn btn-primary" id="open-options">View your schedules</button>
+    </div>
+  </div>
+
+  <script src="storage.js"></script>
+  <script src="onboarding.js"></script>
+</body>
+</html>

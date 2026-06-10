@@ -1,0 +1,19 @@
+{
+  "name": "Social Media",
+  "origin": "frozen",
+  "sites": [
+    "facebook.com",
+    "twitter.com",
+    "x.com",
+    "instagram.com",
+    "tiktok.com",
+    "reddit.com",
+    "snapchat.com",
+    "pinterest.com",
+    "linkedin.com",
+    "tumblr.com",
+    "threads.net",
+    "bsky.app",
+    "mastodon.social"
+  ]
+}

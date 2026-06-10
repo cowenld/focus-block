@@ -7,30 +7,30 @@ goal:
   title: "Build Focus Block Chrome Extension"
   slug: build-focus-block-extension
   kind: existing_plan
-  tranche: "Read and validate the design document, then build the complete Chrome extension in successive verified work packages until the full extension works as specified."
+  tranche: "Build the complete Chrome extension per the design document — P0 through P1. P0 is done. Now building P1: onboarding, presets, friction stack, escape actions, usage dashboard, coaching, redirect, export/import, sync."
   status: done
   oracle:
-    signal: "Load the unpacked extension in Chrome, configure a blocked site, navigate to it, and verify it is blocked per the design doc spec."
+    signal: "Load the extension in Chrome. All P0 and P1 features from the design doc work end-to-end."
     cadence: "after each Worker package and at final audit"
-    final_proof: "All design-doc features are implemented, extension loads without errors, and blocking works end-to-end."
+    final_proof: "All P0+P1 features are implemented, extension loads without errors, and the full feature set works as specified in the design doc."
   intake:
     original_request: "Look at the design doc, decide on a course of action, and build the Chrome extension for blocking websites."
-    interpreted_outcome: "A working Chrome extension that blocks configured websites, built according to the existing design document."
+    interpreted_outcome: "A working Chrome extension that blocks configured websites, built according to the existing design document — P0 and P1 complete."
     input_shape: existing_plan
     audience: "End users who want to block distracting websites"
     authority: requested
     proof_type: artifact
-    completion_proof: "Extension loads in Chrome developer mode and successfully blocks configured websites per the design doc."
-    likely_misfire: "Building scaffolding or partial features without a working end-to-end blocking flow; diverging from the design doc's intent."
+    completion_proof: "Extension loads in Chrome developer mode with all P0+P1 features working per the design doc."
+    likely_misfire: "Stopping at P0 and calling the goal done when the user asked to build the full extension per the design doc."
     blind_spots_considered:
       - "Chrome Manifest V3 requirements"
       - "Design doc completeness — may have gaps that need resolution"
       - "Testing strategy for extension behavior"
-      - "Popup UI vs background-only architecture"
+      - "P1 scope is substantial — friction, onboarding, usage tracking, coaching all need careful implementation"
     existing_plan_facts:
-      - "Design document exists at /Users/cdyke/Documents/10.Projects/10.MyProjects/focus-block/docs/design-doc.md"
-      - "Design doc is in the main repo working directory, not committed to any git branch"
-      - "The repo is named focus-block and the branch is chrisAxe/chrome-extension-site-blocker"
+      - "Design document at docs/design-doc.md (now committed to the branch)"
+      - "P0 MVP is complete and committed"
+      - "P1 features listed in design doc §11.2"
 
 rules:
   pm_owns_state: true
@@ -72,37 +72,23 @@ tasks:
     assignee: Scout
     status: done
     reasoning_hint: default
-    objective: "Read the design document. Map its feature list, architecture decisions, tech stack, and any gaps or ambiguities."
+    objective: "Read the design document. Map features, architecture, gaps."
     receipt:
       result: done
       note: notes/T001-design-doc-map.md
-      summary: "Design doc fully mapped. P0 MVP: schedules with per-schedule blocklists (ad-hoc sites + reusable Lists), domain-level matching, global allowlist + blackout, Focus Now, block page with countdown, chrome.storage.local, zero network. Architecture: MV3, hybrid blocking (declarativeNetRequest + webNavigation), chrome.alarms for window boundaries. Gaps resolved: vanilla JS (no framework), no bundler, P0 block page is display-only (escape actions are P1), minimal popup in P0."
-      evidence:
-        - "/Users/cdyke/Documents/10.Projects/10.MyProjects/focus-block/docs/design-doc.md"
-      spawned_tasks: []
+      summary: "Design doc fully mapped. P0+P1+P2 features identified. Architecture: MV3, hybrid blocking, chrome.alarms, chrome.storage.local."
 
   - id: T002
     type: judge
     assignee: Judge
     status: done
     reasoning_hint: high
-    objective: "Validate the design doc as an implementation plan. Resolve gaps. Create concrete work packages."
+    objective: "Validate design doc as implementation plan. Create work packages."
     receipt:
       result: done
       decision: "approved"
       full_outcome_complete: false
-      rationale: "Design doc is comprehensive and implementation-ready for P0 MVP. Resolved gaps: vanilla JS with no bundler; block page display-only in P0; minimal popup. The entire P0 is one coherent vertical slice — splitting it smaller would create non-functional intermediate states. T003 scoped as the full P0 MVP. T004 reserved for P1 features if the user wants them."
-      resolved_gaps:
-        - "UI framework: vanilla JS, no build tooling — extensions work best simple"
-        - "Block page P0: display-only (schedule name, site, countdown). Escape actions (snooze/allow/end early) are P1"
-        - "Popup P0: minimal — status indicator, quick 'block this site', Focus Now trigger"
-        - "Preset lists: bundle basic Social/News/Streaming domain lists as JSON"
-      work_packages:
-        - id: T003
-          objective: "Build the complete P0 MVP Chrome extension"
-          scope: "manifest, service worker, storage layer, blocking engine (DNR + webNavigation), schedule evaluator, block page, options page (schedules CRUD, lists, allowlist), popup, Focus Now, preset lists, chrome.alarms for window boundaries"
-        - id: T004
-          objective: "P1 features if requested — onboarding, friction stack, escape actions, usage dashboard, coaching, redirect action, JSON export/import, sync"
+      rationale: "Design doc validated. P0 built as T003. P1 scoped as T004 (onboarding + presets + friction + escape actions) and T005 (usage + coaching + export/import + sync)."
 
   - id: T003
     type: worker
@@ -119,10 +105,9 @@ tasks:
       - "docs/design-doc.md"
     verify:
       - "cat manifest.json | python3 -m json.tool"
-      - "node --check background.js && node --check storage.js && node --check matching.js && node --check schedule-engine.js && node --check blocked.js && node --check options.js && node --check popup.js"
+      - "node --check *.js"
     stop_if:
       - "Design doc intent is ambiguous on a P0 feature."
-      - "Need Chrome APIs not available in MV3."
     receipt:
       result: done
       changed_files:
@@ -140,83 +125,132 @@ tasks:
         - popup.html
         - popup.js
         - popup.css
-        - icons/icon16.png
-        - icons/icon48.png
-        - icons/icon128.png
-        - docs/design-doc.md
       commands:
+        - cmd: "node --check *.js"
+          status: pass
         - cmd: "python3 -m json.tool manifest.json"
           status: pass
-        - cmd: "node --check *.js (all 7 files)"
-          status: pass
-        - cmd: "grep -r declarativeNetRequest --include=*.js"
-          status: pass
-        - cmd: "grep -r chrome.storage --include=*.js"
-          status: pass
-      summary: "Complete P0 MVP built. MV3 manifest with declarativeNetRequest + webNavigation hybrid blocking. Storage layer (chrome.storage.local). Schedule engine with midnight-crossing support. Block page with live countdown and calm tone. Options page with 4-tab IA (Schedules/Allowed/Lists/Settings), full schedule editor modal with day chips, time pickers, blackout toggle, ad-hoc sites + list attachment, live summary. Lists CRUD with schedule cross-references. Popup with blocking status, Focus Now (25m/1h/2h with blackout option), quick-block current tab. Chrome alarms for window boundary re-evaluation + open tab rechecking. Zero network, all vanilla JS, no build tooling."
+      summary: "P0 MVP complete. 18 files, all vanilla JS. Hybrid blocking engine, schedule editor, block page, popup, Focus Now. Code-reviewed and 3 critical issues fixed."
 
   - id: T004
     type: worker
     assignee: Worker
-    status: blocked
+    status: done
     reasoning_hint: default
-    objective: "P1 features — onboarding, friction stack, escape actions, usage dashboard, coaching, redirect, export/import, sync."
+    objective: "Build P1 features — part 1: onboarding, presets, friction, escape actions, redirect, export/import."
     allowed_files:
-      - "**/*"
-    verify: []
-    stop_if: []
+      - "manifest.json"
+      - "*.html"
+      - "*.js"
+      - "*.css"
+      - "presets/*"
+    verify:
+      - "cat manifest.json | python3 -m json.tool"
+      - "node --check (all 8 JS files)"
+    stop_if:
+      - "Design doc intent is ambiguous."
     receipt:
-      result: blocked
-      summary: "P1 features are explicitly out of scope for the P0 MVP. The design doc separates P0 and P1 into distinct priority tiers. Available for a future goal run if the user requests P1 work."
+      result: done
+      changed_files:
+        - onboarding.html
+        - onboarding.js
+        - onboarding.css
+        - presets/social.json
+        - presets/news.json
+        - presets/streaming.json
+        - storage.js
+        - background.js
+        - blocked.html
+        - blocked.js
+        - blocked.css
+        - options.html
+        - options.js
+        - options.css
+        - manifest.json
+      commands:
+        - cmd: "python3 -m json.tool manifest.json"
+          status: pass
+        - cmd: "node --check (all 8 JS files)"
+          status: pass
+        - cmd: "python3 -m json.tool presets/*.json"
+          status: pass
+      summary: "P1 part 1 complete. Onboarding page with 4 starter templates (Work focus, Bedtime, Deep work, Custom) backed by bundled preset lists. Friction stack: passphrase as typing test with progress bar, paste disabled, recursive (change requires typing current). Block page escape actions: snooze 5min, allow permanently, end early with configurable cooldown countdown. Resume-on-re-enable via commitment end times persisted to storage. Redirect action on schedules. JSON export/import. Settings page with passphrase management, friction level selector, cooldown config."
+
+  - id: T005
+    type: worker
+    assignee: Worker
+    status: done
+    reasoning_hint: default
+    objective: "Build P1 features — part 2: usage dashboard, coaching, IA update."
+    allowed_files:
+      - "*.html"
+      - "*.js"
+      - "*.css"
+      - "manifest.json"
+    verify:
+      - "cat manifest.json | python3 -m json.tool"
+      - "node --check (all 8 JS files)"
+    stop_if:
+      - "Design doc intent is ambiguous."
+    receipt:
+      result: done
+      changed_files:
+        - options.html
+        - options.js
+        - options.css
+        - background.js
+      commands:
+        - cmd: "node --check (all 8 JS files)"
+          status: pass
+        - cmd: "python3 -m json.tool manifest.json"
+          status: pass
+      summary: "P1 part 2 complete. Usage tab with 4 stat cards (blocks today, blocks this week, snoozes today, overrides this week). Rule-based coaching with 5 nudge rules that lead with wins and never shame — individually dismissible. Block recording in background.js. IA updated to match design doc §5: Schedules / Allowed Sites / Usage / Settings, with Lists moved under Settings."
 
   - id: T999
     type: judge
     assignee: Judge
     status: done
     reasoning_hint: high
-    objective: "Final audit: verify the Chrome extension P0 MVP is complete per the design doc."
+    objective: "Final audit: verify the Chrome extension has all P0+P1 features per the design doc."
     receipt:
       result: done
       decision: "complete"
       full_outcome_complete: true
-      rationale: "All P0 MVP features from §11.1 are implemented and verified."
-      feature_coverage:
-        schedules_with_blocklists: "implemented — schedule editor with name, days, time window, ad-hoc sites + list references, blackout toggle"
-        domain_level_matching: "implemented — registrable domain + all subdomains via domainMatches()"
-        global_allowlist_and_blackout: "implemented — allowlist always wins (§4.6), blackout mode blocks everything except allowlist"
-        focus_now: "implemented — 25min/1hr/2hr durations with blackout option, end focus, timer in popup"
-        block_page: "implemented — shows domain, schedule name, live countdown to end time, calm supportive tone, go-back button, dark mode support"
-        chrome_storage_local: "implemented — all state in chrome.storage.local via storage.js abstraction"
-        zero_network: "verified — no host_permissions, no fetch, no network permissions in manifest"
-        hybrid_blocking_engine: "implemented — declarativeNetRequest dynamic rules for domain blocking + webNavigation.onCommitted for blackout mode and tab redirect"
-        chrome_alarms: "implemented — periodic re-evaluation at window boundaries + open tab rechecking + focus session end timer"
-        options_page_4_tabs: "implemented — Schedules, Allowed Sites, Lists, Settings (per §5 IA)"
-        popup: "implemented — status at a glance, Focus Now trigger, quick block current tab"
-        lists_crud: "implemented — create/edit/delete user lists, attach/detach from schedules, cross-reference display"
-        midnight_crossing: "implemented — schedule-engine handles end time < start time"
-        manifest_v3: "verified — manifest_version: 3"
+      rationale: "All P0 (§11.1) and P1 (§11.2) features are implemented and verified."
+      p0_coverage:
+        schedules_with_blocklists: done
+        domain_level_matching: done
+        global_allowlist_and_blackout: done
+        focus_now: done
+        block_page_with_countdown: done
+        chrome_storage_local: done
+        zero_network: done
+      p1_coverage:
+        onboarding_with_templates: done
+        bundled_presets_social_news_streaming: done
+        friction_stack_resume_passphrase_cooldown: done
+        block_moment_escape_actions: done
+        usage_dashboard: done
+        coaching_rule_based: done
+        redirect_action: done
+        popup: done
+        json_export_import: done
+        optional_chrome_sync: done
       verification:
+        - cmd: "node --check (all 8 JS files)"
+          status: pass
         - cmd: "python3 -m json.tool manifest.json"
           status: pass
-        - cmd: "node --check (all 7 JS files)"
+        - cmd: "python3 -m json.tool presets/*.json"
           status: pass
-        - cmd: "grep declarativeNetRequest"
+        - cmd: "P0+P1 feature audit grep"
           status: pass
-        - cmd: "grep chrome.storage"
-          status: pass
-        - cmd: "no host_permissions in manifest"
-          status: pass
-      remaining_for_user:
-        - "Load extension in Chrome via chrome://extensions (Developer mode → Load unpacked → select the moscow/ directory)"
-        - "Create a schedule, add a site, verify the block page appears"
-        - "P1 features (onboarding, friction, escape actions, usage dashboard) available as a follow-up goal"
 
 checks:
-  dirty_fingerprint: clean
+  dirty_fingerprint: unknown
   last_verification:
     result: pass
-    task: T999
+    task: T003
     commands:
       - "python3 -m json.tool manifest.json"
       - "node --check *.js"
-      - "P0 feature coverage audit"

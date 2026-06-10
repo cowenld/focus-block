@@ -20,10 +20,7 @@ body {
   padding: 48px 32px;
 }
 
-.icon {
-  font-size: 48px;
-  margin-bottom: 24px;
-}
+.icon { font-size: 48px; margin-bottom: 24px; }
 
 h1 {
   font-size: 28px;
@@ -38,10 +35,7 @@ h1 {
   margin-bottom: 32px;
   line-height: 1.5;
 }
-
-.subtitle strong {
-  color: #2c2c2c;
-}
+.subtitle strong { color: #2c2c2c; }
 
 .countdown-section {
   background: #fff;
@@ -70,7 +64,7 @@ h1 {
   font-size: 14px;
   color: #777;
   line-height: 1.6;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .back-btn {
@@ -84,29 +78,148 @@ h1 {
   cursor: pointer;
   transition: background 0.15s;
 }
+.back-btn:hover { background: #444; }
 
-.back-btn:hover {
-  background: #444;
+/* Escape actions */
+.escape-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.escape-btn {
+  background: #fff;
+  border: 1px solid #e5e3de;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: left;
+}
+.escape-btn:hover { border-color: #999; }
+.escape-secondary { color: #555; }
+.escape-danger { color: #b44; }
+.escape-danger:hover { border-color: #b44; }
+
+/* Passphrase */
+.passphrase-section {
+  background: #fff;
+  border: 1px solid #e5e3de;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.passphrase-label {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.passphrase-reference {
+  font-size: 14px;
+  color: #888;
+  font-style: italic;
+  margin-bottom: 12px;
+  line-height: 1.5;
+  user-select: none;
+}
+
+.passphrase-input {
+  width: 100%;
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fff;
+  color: #2c2c2c;
+  margin-bottom: 8px;
+}
+.passphrase-input:focus { outline: none; border-color: #999; }
+
+.passphrase-progress {
+  height: 4px;
+  background: #eee;
+  border-radius: 2px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.passphrase-bar {
+  height: 100%;
+  background: #2c2c2c;
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.1s;
+}
+
+.btn-cancel {
+  background: none;
+  border: none;
+  color: #777;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.btn-cancel:hover { color: #2c2c2c; }
+
+/* Cooldown */
+.cooldown-section {
+  background: #fff;
+  border: 1px solid #e5e3de;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.cooldown-warning {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.cooldown-timer {
+  font-size: 36px;
+  font-weight: 700;
+  color: #b44;
+  margin-bottom: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cooldown-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
 }
 
 @media (prefers-color-scheme: dark) {
-  body {
-    background: #1a1a1a;
-    color: #e0e0e0;
-  }
+  body { background: #1a1a1a; color: #e0e0e0; }
   h1 { color: #f0f0f0; }
   .subtitle { color: #aaa; }
   .subtitle strong { color: #e0e0e0; }
-  .countdown-section {
-    background: #252525;
-    border-color: #333;
-  }
+  .countdown-section { background: #252525; border-color: #333; }
   .countdown-label { color: #888; }
   .countdown { color: #f0f0f0; }
   .reminder { color: #888; }
-  .back-btn {
-    background: #f0f0f0;
-    color: #1a1a1a;
-  }
+  .back-btn { background: #f0f0f0; color: #1a1a1a; }
   .back-btn:hover { background: #ddd; }
+  .escape-btn { background: #252525; border-color: #333; color: #ccc; }
+  .escape-btn:hover { border-color: #888; }
+  .escape-danger { color: #e66; }
+  .passphrase-section { background: #252525; border-color: #333; }
+  .passphrase-reference { color: #888; }
+  .passphrase-input { background: #1a1a1a; border-color: #444; color: #e0e0e0; }
+  .passphrase-progress { background: #333; }
+  .passphrase-bar { background: #f0f0f0; }
+  .btn-cancel { color: #888; }
+  .btn-cancel:hover { color: #e0e0e0; }
+  .cooldown-section { background: #252525; border-color: #333; }
+  .cooldown-warning { color: #aaa; }
+  .cooldown-timer { color: #e66; }
 }
