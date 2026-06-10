@@ -24,6 +24,12 @@ Features explicitly deferred in the design document.
 - [ ] **Custom CSS on block page** — let users apply their own HTML/CSS to the blocked page. *(§11.3)*
 - [ ] **Pomodoro-style sessions** — work/break cycles with automatic timers, distinct from Focus Now's simple countdown. *(§11.3)*
 
+## Known limitations
+
+Working features with documented edges, in rough priority order.
+
+- [ ] **Sync payload sharding** — synced config is stored as a single `chrome.storage.sync` key, which has an 8KB-per-item quota. A very large config (dozens of lists with hundreds of sites) exceeds it and the sync write fails silently (caught, logged nowhere). Fix: shard the payload across multiple keys, or surface a "config too large to sync" notice in Settings. *(§12 quota note)*
+
 ## Ideas (not in design doc)
 
 Space for future ideas that come up during development or user feedback.
